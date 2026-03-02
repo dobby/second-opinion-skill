@@ -25,6 +25,14 @@ grok.com → Grok AI → response
 
 ## Installation
 
+### Install via skills.sh
+
+```bash
+skills install dobby/second-opinion-skill
+```
+
+### Manual Installation
+
 ### 1. Install the Chrome Extension
 
 1. Open Chrome → `chrome://extensions`
