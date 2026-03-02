@@ -44,32 +44,49 @@ jobs:
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
 
-      - name: Rename binary
-        run: cp target/${{ matrix.target }}/release/second-opinion ${{ matrix.binary_name }}
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.binary_name }}
-          path: ${{ matrix.binary_name }}
+          path: target/${{ matrix.target }}/release/second-opinion
 
   release:
-    name: Create Release
+    name: Bundle binaries and create release
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: master
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts/
-          merge-multiple: true
+          path: scripts/bin/
+          merge-multiple: false
+
+      - name: Rename and chmod binaries
+        run: |
+          for dir in scripts/bin/*/; do
+            name=$(basename "$dir")
+            mv "$dir/second-opinion" "scripts/bin/$name"
+            chmod +x "scripts/bin/$name"
+            rmdir "$dir"
+          done
+          ls -lh scripts/bin/
+
+      - name: Commit binaries to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scripts/bin/
+          git commit -m "chore: bundle binaries for ${{ github.ref_name }}"
+          git push origin master
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*
+          files: scripts/bin/second-opinion-*
           generate_release_notes: true

@@ -40,19 +40,7 @@ skills install dobby/second-opinion-skill
 3. Click "Load unpacked"
 4. Select the `extension/` directory from this skill
 
-### 2. Install the CLI binary
-
-Download pre-built binaries:
-```bash
-./scripts/refresh-binaries-from-release.sh
-```
-
-Or build from source:
-```bash
-./scripts/build-release-binary.sh
-```
-
-### 3. Open grok.com
+### 2. Open grok.com
 
 Log in to [grok.com](https://grok.com) in Chrome and keep the tab open.
 
@@ -97,19 +85,11 @@ timeout_secs = 60
 | 2 | Extension not connected (open grok.com) |
 | 3 | Timeout waiting for response |
 
-## Development
+## Releasing
 
-```bash
-cargo build
-cargo test
-```
+Tag a version to trigger the GitHub Actions workflow, which builds binaries for all platforms and commits them back to the repo:
 
-## Building for Release
-
-Tag a version to trigger the GitHub Actions workflow:
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
 ```
-
-This builds binaries for all supported platforms and creates a GitHub release.
