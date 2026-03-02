@@ -37,6 +37,11 @@ enum Commands {
         /// The message to send
         message: String,
     },
+    /// Internal: run as the daemon process (do not call directly)
+    #[command(hide = true)]
+    DaemonInternal {
+        port: u16,
+    },
 }
 
 #[derive(Deserialize, Default)]
@@ -124,6 +129,7 @@ async fn main() -> Result<()> {
         Commands::Stop => cmd_stop().await?,
         Commands::Status => cmd_status(port).await?,
         Commands::Ask { message } => cmd_ask(port, &message, timeout_secs).await?,
+        Commands::DaemonInternal { port: daemon_port } => cmd_daemon_internal(daemon_port).await?,
     }
 
     Ok(())
@@ -137,7 +143,7 @@ async fn cmd_start(port: u16) -> Result<()> {
         return Ok(());
     }
 
-    // Verify port is available before daemonizing
+    // Verify port is available before spawning daemon
     if !port_available(port) {
         anyhow::bail!("Port {} is not available", port);
     }
@@ -145,62 +151,42 @@ async fn cmd_start(port: u16) -> Result<()> {
     let state_dir = state_dir();
     fs::create_dir_all(&state_dir).context("Failed to create state directory")?;
 
-    // Double-fork daemonization
-    unsafe {
-        let pid = libc::fork();
-        if pid < 0 {
-            panic!("fork failed");
-        }
-        if pid > 0 {
-            // Parent: wait for port file to appear (up to 5s) then exit
-            let deadline = Instant::now() + Duration::from_secs(5);
-            loop {
-                if port_file().exists() {
-                    if let Some(p) = read_port_file() {
-                        println!("Server started on port {}", p);
-                        std::process::exit(0);
-                    }
-                }
-                if Instant::now() >= deadline {
-                    eprintln!("Timeout waiting for server to start");
-                    std::process::exit(1);
-                }
-                std::thread::sleep(Duration::from_millis(100));
+    // Spawn a fresh child process as the daemon (avoids fork-inside-Tokio corruption)
+    let exe = std::env::current_exe().context("Failed to get current executable path")?;
+    std::process::Command::new(&exe)
+        .arg("daemon-internal")
+        .arg(port.to_string())
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .context("Failed to spawn daemon process")?;
+
+    // Wait for the daemon to write its port file (up to 5s)
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        if port_file().exists() {
+            if let Some(p) = read_port_file() {
+                println!("Server started on port {}", p);
+                return Ok(());
             }
         }
-
-        // Intermediate child
-        libc::setsid();
-
-        let pid2 = libc::fork();
-        if pid2 < 0 {
-            panic!("fork2 failed");
+        if Instant::now() >= deadline {
+            anyhow::bail!("Timeout waiting for server to start");
         }
-        if pid2 > 0 {
-            // Intermediate exits
-            std::process::exit(0);
-        }
-
-        // Daemon process: redirect stdin/stdout/stderr to /dev/null
-        let devnull = libc::open(b"/dev/null\0".as_ptr() as *const libc::c_char, libc::O_RDWR);
-        if devnull >= 0 {
-            libc::dup2(devnull, 0);
-            libc::dup2(devnull, 1);
-            libc::dup2(devnull, 2);
-            if devnull > 2 {
-                libc::close(devnull);
-            }
-        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
+}
 
-    // Daemon: write PID file
-    let pid = unsafe { libc::getpid() };
+async fn cmd_daemon_internal(port: u16) -> Result<()> {
+    let state_dir = state_dir();
+    fs::create_dir_all(&state_dir).context("Failed to create state directory")?;
+
+    let pid = std::process::id();
     fs::write(pid_file(), pid.to_string()).context("Failed to write PID file")?;
     fs::write(port_file(), port.to_string()).context("Failed to write port file")?;
 
-    // Run the server
     server::run_server(port).await?;
-
     Ok(())
 }
 

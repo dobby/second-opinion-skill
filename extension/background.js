@@ -91,5 +91,12 @@ function sendError(id, error) {
   }
 }
 
+// Wake message from popup — attempt reconnect immediately if disconnected
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'wake' && (!ws || ws.readyState === WebSocket.CLOSED)) {
+    connectWS();
+  }
+});
+
 // Start connecting
 connectWS();
