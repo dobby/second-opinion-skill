@@ -28,7 +28,7 @@ grok.com → Grok AI → response
 ### Install via skills.sh
 
 ```bash
-skills install dobby/second-opinion-skill
+npx skills add dobby/second-opinion-skill
 ```
 
 ### Manual Installation
