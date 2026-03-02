@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Detect script directory (where the binary lives)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BIN_DIR="$SCRIPT_DIR/bin"
+
+# Detect platform
+OS="$(uname -s)"
+ARCH="$(uname -m)"
+
+case "$OS" in
+  Darwin)
+    case "$ARCH" in
+      arm64)  BINARY="$BIN_DIR/second-opinion-darwin-arm64" ;;
+      x86_64) BINARY="$BIN_DIR/second-opinion-darwin-x86_64" ;;
+      *)      echo "Unsupported architecture: $ARCH" >&2; exit 1 ;;
+    esac
+    ;;
+  Linux)
+    case "$ARCH" in
+      x86_64) BINARY="$BIN_DIR/second-opinion-linux-x86_64" ;;
+      aarch64|arm64) BINARY="$BIN_DIR/second-opinion-linux-aarch64" ;;
+      *)      echo "Unsupported architecture: $ARCH" >&2; exit 1 ;;
+    esac
+    ;;
+  *)
+    echo "Unsupported OS: $OS" >&2
+    exit 1
+    ;;
+esac
+
+if [[ ! -f "$BINARY" ]]; then
+  echo "Binary not found: $BINARY" >&2
+  echo "Run scripts/refresh-binaries-from-release.sh to download, or scripts/build-release-binary.sh to build locally." >&2
+  exit 1
+fi
+
+exec "$BINARY" "$@"
