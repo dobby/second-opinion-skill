@@ -64,29 +64,29 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: scripts/bin/
+          path: skills/second-opinion/scripts/bin/
           merge-multiple: false
 
       - name: Rename and chmod binaries
         run: |
-          for dir in scripts/bin/*/; do
+          for dir in skills/second-opinion/scripts/bin/*/; do
             name=$(basename "$dir")
-            mv "$dir/second-opinion" "scripts/bin/$name"
-            chmod +x "scripts/bin/$name"
+            mv "$dir/second-opinion" "skills/second-opinion/scripts/bin/$name"
+            chmod +x "skills/second-opinion/scripts/bin/$name"
             rmdir "$dir"
           done
-          ls -lh scripts/bin/
+          ls -lh skills/second-opinion/scripts/bin/
 
       - name: Commit binaries to repo
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add scripts/bin/
+          git add skills/second-opinion/scripts/bin/
           git commit -m "chore: bundle binaries for ${{ github.ref_name }}"
           git push origin master
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          files: scripts/bin/second-opinion-*
+          files: skills/second-opinion/scripts/bin/second-opinion-*
           generate_release_notes: true

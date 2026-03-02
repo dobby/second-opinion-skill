@@ -38,7 +38,7 @@ npx skills add dobby/second-opinion-skill
 1. Open Chrome → `chrome://extensions`
 2. Enable "Developer mode"
 3. Click "Load unpacked"
-4. Select the `extension/` directory from this skill
+4. Select the `skills/second-opinion/extension/` directory from this repo
 
 ### 2. Open grok.com
 
@@ -48,24 +48,24 @@ Log in to [grok.com](https://grok.com) in Chrome and keep the tab open.
 
 Start the server:
 ```bash
-./scripts/second-opinion start
-./scripts/second-opinion status
+skills/second-opinion/scripts/second-opinion start
+skills/second-opinion/scripts/second-opinion status
 # {"running": true, "port": 7878, "extension_connected": true}
 ```
 
 Ask a question:
 ```bash
-./scripts/second-opinion ask "Is this database schema well-normalized? [paste schema]"
+skills/second-opinion/scripts/second-opinion ask "Is this database schema well-normalized? [paste schema]"
 ```
 
 Follow-up:
 ```bash
-./scripts/second-opinion ask "What about adding an index on the email column?"
+skills/second-opinion/scripts/second-opinion ask "What about adding an index on the email column?"
 ```
 
 Stop when done:
 ```bash
-./scripts/second-opinion stop
+skills/second-opinion/scripts/second-opinion stop
 ```
 
 ## Configuration
